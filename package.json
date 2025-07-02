@@ -5,7 +5,8 @@
   "main": "dist/bump-version.js",
   "type": "module",
   "bin": {
-    "bump-version": "./dist/bump-version.js"
+    "bump-version": "./dist/bump-version.js",
+    "bv": "./dist/bump-version.js"
   },
   "scripts": {
     "build": "tsc",
