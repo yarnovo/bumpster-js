@@ -10,6 +10,7 @@
   },
   "scripts": {
     "build": "tsc",
+    "postbuild": "chmod +x dist/bump-version.js",
     "dev": "tsx src/bump-version.ts",
     "test": "vitest run",
     "test:ui": "vitest --ui",

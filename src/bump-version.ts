@@ -204,7 +204,7 @@ async function main(): Promise<void> {
     });
   }
   
-  if (!currentPrereleaseType || currentPrereleaseType === 'beta' || currentPrereleaseType === 'rc') {
+  if (!currentPrereleaseType || currentPrereleaseType === 'alpha' || currentPrereleaseType === 'beta' || currentPrereleaseType === 'rc') {
     releaseTypeChoices.push({ 
       title: 'RC 版本', 
       value: 'rc', 
