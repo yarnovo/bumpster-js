@@ -243,6 +243,71 @@ describe('bump-version integration tests', () => {
       const newVersion = await getVersion(testRepo.path);
       expect(newVersion).toBe('1.0.0');
     });
+
+    it('should increment rc version', async () => {
+      testRepo = await createTestRepo('1.0.0-rc.0');
+      
+      const { stdout } = await execa('node', [bumpVersionPath], {
+        cwd: testRepo.path,
+        env: createTestEnv({
+          releaseTypeChoice: 'rc',
+          confirm: true
+        })
+      });
+      
+      const newVersion = await getVersion(testRepo.path);
+      expect(newVersion).toBe('1.0.0-rc.1');
+    });
+
+    it('should create rc version from production with minor bump', async () => {
+      testRepo = await createTestRepo('1.0.0');
+      
+      const { stdout } = await execa('node', [bumpVersionPath], {
+        cwd: testRepo.path,
+        env: createTestEnv({
+          releaseTypeChoice: 'rc',
+          selectedVersionBump: 'minor',
+          confirm: true
+        })
+      });
+      
+      const newVersion = await getVersion(testRepo.path);
+      expect(newVersion).toBe('1.1.0-rc.0');
+      
+      const tags = await getTags(testRepo.path);
+      expect(tags).toContain('v1.1.0-rc.0');
+    });
+
+    it('should create rc version from production with major bump', async () => {
+      testRepo = await createTestRepo('1.5.3');
+      
+      const { stdout } = await execa('node', [bumpVersionPath], {
+        cwd: testRepo.path,
+        env: createTestEnv({
+          releaseTypeChoice: 'rc',
+          selectedVersionBump: 'major',
+          confirm: true
+        })
+      });
+      
+      const newVersion = await getVersion(testRepo.path);
+      expect(newVersion).toBe('2.0.0-rc.0');
+    });
+
+    it('should handle rc version with high iteration number', async () => {
+      testRepo = await createTestRepo('1.0.0-rc.9');
+      
+      const { stdout } = await execa('node', [bumpVersionPath], {
+        cwd: testRepo.path,
+        env: createTestEnv({
+          releaseTypeChoice: 'rc',
+          confirm: true
+        })
+      });
+      
+      const newVersion = await getVersion(testRepo.path);
+      expect(newVersion).toBe('1.0.0-rc.10');
+    });
   });
 
   describe('error handling', () => {

@@ -306,7 +306,7 @@ async function main(): Promise<void> {
     `提交版本更新 (commit message: "chore: release ${newVersion}")`,
     `创建 Git 标签 ${tagName}`,
     '推送提交和标签到远程仓库 (git push --follow-tags)',
-    'GitHub Actions 将自动部署到 Cloudflare Workers'
+    '如果配置了 CI/CD，将自动执行后续流程'
   ];
 
   steps.forEach((step, index) => {
@@ -359,7 +359,7 @@ async function main(): Promise<void> {
 
     console.log(chalk.green.bold('\n✅ 版本更新成功！\n'));
     console.log(chalk.white(`版本 ${newVersion} 已创建并推送到远程仓库`));
-    console.log(chalk.white('GitHub Actions 正在自动部署到 Cloudflare Workers...'));
+    console.log(chalk.white('如果配置了 CI/CD，将自动执行后续流程...'));
     
     // 显示部署后的访问地址
     const workerName = newVersion.replace(/\./g, '-').replace(/-(alpha|beta|rc)-/, '-$1');
