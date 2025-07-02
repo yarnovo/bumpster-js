@@ -1,0 +1,43 @@
+{
+  "name": "bump-version",
+  "version": "0.1.0",
+  "description": "A CLI tool for semantic version management",
+  "main": "dist/bump-version.js",
+  "type": "module",
+  "bin": {
+    "bump-version": "./dist/bump-version.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx src/bump-version.ts",
+    "test": "vitest run",
+    "test:ui": "vitest --ui",
+    "coverage": "vitest run --coverage",
+    "prebuild": "rimraf dist",
+    "prepublishOnly": "npm run build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ai-app-base/bump-version-js.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/ai-app-base/bump-version-js/issues"
+  },
+  "homepage": "https://github.com/ai-app-base/bump-version-js#readme",
+  "devDependencies": {
+    "@types/node": "^24.0.10",
+    "@types/prompts": "^2.4.9",
+    "@vitest/ui": "^3.2.4",
+    "execa": "^9.6.0",
+    "rimraf": "^6.0.1",
+    "tsx": "^4.20.3",
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.4"
+  },
+  "dependencies": {
+    "chalk": "^5.4.1",
+    "prompts": "^2.4.2"
+  }
+}
