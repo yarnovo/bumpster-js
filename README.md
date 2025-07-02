@@ -52,13 +52,13 @@
 ### 全局安装
 
 ```bash
-npm install -g bump-version
+npm install -g @ai-app-base/bump-version-js
 ```
 
 ### 项目内安装
 
 ```bash
-npm install --save-dev bump-version
+npm install --save-dev @ai-app-base/bump-version-js
 ```
 
 ## 使用
