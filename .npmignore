@@ -1,0 +1,40 @@
+# Source files
+src/
+tests/
+
+# Config files
+.github/
+.husky/
+.test-repos/
+test-repo/
+
+# Development files
+*.ts
+!*.d.ts
+tsconfig.json
+vitest.config.ts
+eslint.config.js
+
+# Logs and coverage
+*.log
+coverage/
+.nyc_output/
+
+# Editor directories
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Git files
+.git/
+.gitignore
+
+# Development docs
+DEVELOPMENT.md
+
+# Temporary files
+*.tmp
+*.swp
