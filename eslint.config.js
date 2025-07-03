@@ -40,6 +40,19 @@ export default tseslint.config(
   },
   {
     files: ['**/*.js'],
+    languageOptions: {
+      globals: {
+        console: 'readonly',
+        process: 'readonly',
+        Buffer: 'readonly',
+        __dirname: 'readonly',
+        __filename: 'readonly',
+        exports: 'writable',
+        module: 'writable',
+        require: 'readonly',
+        global: 'readonly',
+      },
+    },
     rules: {
       '@typescript-eslint/no-require-imports': 'off',
     },
