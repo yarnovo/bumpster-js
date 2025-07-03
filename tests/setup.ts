@@ -10,7 +10,7 @@ const __dirname = dirname(__filename);
 // 全局清理函数，确保所有测试目录都被清理
 afterAll(async () => {
   const testReposDir = join(__dirname, '..', '.test-repos');
-  
+
   try {
     // 清理整个测试目录
     await rm(testReposDir, { recursive: true, force: true });

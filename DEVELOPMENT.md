@@ -74,11 +74,13 @@ bump-version-js/
 ### 主要依赖
 
 **运行时依赖**:
+
 - `semver`: 语义化版本解析和计算
 - `prompts`: 命令行交互界面
 - `chalk`: 终端颜色输出
 
 **开发依赖**:
+
 - `typescript`: TypeScript 编译器
 - `vitest`: 测试框架
 - `@vitest/ui`: 测试 UI 界面
@@ -108,6 +110,7 @@ bump-version-js/
 #### 命令路由
 
 主程序通过检查命令行参数来决定执行哪个功能：
+
 - 无参数或未知参数：进入交互式版本管理模式
 - `validate <version>`: 执行版本验证功能
 - `-h, --help`: 显示帮助信息
@@ -175,6 +178,7 @@ npm run build
 ```
 
 构建产物：
+
 - `dist/bump-version.js`: 统一的命令行工具（包含所有功能）
 
 ## 本地测试
@@ -186,9 +190,11 @@ npm run build
 #### 链接包
 
 1. **在包目录中创建全局链接**
+
    ```bash
    npm link
    ```
+
    这会在全局 node_modules 中创建一个符号链接指向当前包。
 
 2. **在其他项目中使用链接的包**
@@ -200,6 +206,7 @@ npm run build
 #### 卸载链接
 
 1. **从其他项目中移除链接**
+
    ```bash
    cd /path/to/other-project
    npm unlink @ai-app-base/bump-version-js
@@ -208,10 +215,11 @@ npm run build
    ```
 
 2. **移除全局链接**
+
    ```bash
    # 方法1：在任何目录运行
    npm uninstall -g @ai-app-base/bump-version-js
-   
+
    # 方法2：在包目录运行
    cd /path/to/bump-version-js
    npm unlink @ai-app-base/bump-version-js
@@ -236,6 +244,7 @@ npm list -g @ai-app-base/bump-version-js
 ## 发布流程
 
 1. **本地测试**
+
    ```bash
    npm test
    npm run build
@@ -243,6 +252,7 @@ npm list -g @ai-app-base/bump-version-js
    ```
 
 2. **版本更新**
+
    ```bash
    npm run build
    bump-version-js  # 使用工具自身更新版本
@@ -298,6 +308,7 @@ npm list -g @ai-app-base/bump-version-js
 - `chore:` 构建过程或辅助工具的变动
 
 示例：
+
 ```
 feat: 添加版本验证命令
 fix: 修复预发布版本升级逻辑
@@ -318,11 +329,13 @@ npm run dev
 ### 测试调试
 
 1. 运行单个测试文件
+
    ```bash
    npx vitest run tests/bump-version.integration.test.ts
    ```
 
 2. 使用测试 UI 进行交互式调试
+
    ```bash
    npm run test:ui
    ```
@@ -345,6 +358,7 @@ BUMP_VERSION_DEFAULTS='{"releaseTypeChoice":"production","selectedVersionBump":"
 ### Q: 如何添加新的预发布类型？
 
 A: 需要修改以下位置：
+
 1. `src/bump-version.ts` 中的 `PrereleaseType` 类型定义
 2. `getPrereleaseInfo()` 函数中的类型检查
 3. `getNextVersion()` 函数中的升级逻辑
@@ -353,6 +367,7 @@ A: 需要修改以下位置：
 ### Q: 如何修改提交信息格式？
 
 A: 在 `src/bump-version.ts` 的第 333 行修改提交信息模板：
+
 ```typescript
 exec(`git commit -m "chore: release ${newVersion}"`);
 ```
@@ -360,6 +375,7 @@ exec(`git commit -m "chore: release ${newVersion}"`);
 ### Q: 如何支持其他包管理器（如 yarn、pnpm）？
 
 A: 需要修改：
+
 1. 版本更新命令（第 322 行）
 2. 可能需要处理不同的 lock 文件
 

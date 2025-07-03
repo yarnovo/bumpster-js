@@ -101,6 +101,7 @@ bvj
 #### 使用流程
 
 1. **启动工具**
+
    ```bash
    bvj
    ```
@@ -158,33 +159,39 @@ bvj validate invalid-version
 #### 默认模式（版本管理）
 
 **语法**：
+
 ```bash
 bump-version-js [options]
 bvj [options]
 ```
 
 **功能**：
+
 - 自动检测当前版本
 - 提供版本升级选项
 - 执行 Git 操作
 - 推送到远程仓库
 
 **环境变量**：
+
 - `BUMP_VERSION_SKIP_PUSH`: 设置后跳过 Git 推送步骤（用于测试）
 - `BUMP_VERSION_DEFAULTS`: JSON 格式的默认选项（用于测试）
 
 #### validate 子命令
 
 **语法**：
+
 ```bash
 bump-version-js validate <version>
 bvj validate <version>
 ```
 
 **参数**：
+
 - `version`: 要验证的版本号字符串
 
 **返回值**：
+
 - 成功：退出码 0
 - 失败：退出码 1
 
