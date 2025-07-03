@@ -2,20 +2,15 @@
 
 import { execSync } from 'child_process';
 import { readFileSync } from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 import prompts from 'prompts';
 import chalk from 'chalk';
+import * as semver from 'semver';
 
 type ReleaseType = 'major' | 'minor' | 'patch';
-type PrereleaseType = 'alpha' | 'beta' | 'rc';
+type PrereleaseType = 'dev' | 'alpha' | 'beta' | 'rc';
 type ReleaseChoice = 'production' | PrereleaseType;
-
-interface VersionParts {
-  major: number;
-  minor: number;
-  patch: number;
-  prereleaseType?: PrereleaseType;
-  prereleaseNum?: number;
-}
 
 // 执行命令并返回结果
 function exec(command: string, silent: boolean = false): string {
@@ -57,22 +52,21 @@ function checkGitStatus(): boolean {
   return true;
 }
 
-// 解析版本号
-function parseVersion(version: string): VersionParts | null {
-  const versionMatch = version.match(/^(\d+)\.(\d+)\.(\d+)(-((alpha|beta|rc)\.(\d+)))?$/);
-  if (!versionMatch) {
-    return null;
+// 获取预发布类型和版本号
+function getPrereleaseInfo(version: string): { type?: PrereleaseType; num?: number } {
+  const prerelease = semver.prerelease(version);
+  if (!prerelease || prerelease.length === 0) {
+    return {};
   }
-
-  const [, major, minor, patch, , , prereleaseType, prereleaseNum] = versionMatch;
   
-  return {
-    major: parseInt(major),
-    minor: parseInt(minor),
-    patch: parseInt(patch),
-    prereleaseType: prereleaseType as PrereleaseType | undefined,
-    prereleaseNum: prereleaseNum ? parseInt(prereleaseNum) : undefined
-  };
+  const prereleaseType = prerelease[0] as string;
+  const prereleaseNum = prerelease[1] as number;
+  
+  if (['dev', 'alpha', 'beta', 'rc'].includes(prereleaseType)) {
+    return { type: prereleaseType as PrereleaseType, num: prereleaseNum };
+  }
+  
+  return {};
 }
 
 // 计算下一个版本号
@@ -82,70 +76,182 @@ function getNextVersion(
   isPrerelease: boolean, 
   prereleaseType: PrereleaseType | null
 ): string {
-  const versionParts = parseVersion(currentVersion);
-  if (!versionParts) {
+  // 验证当前版本号
+  if (!semver.valid(currentVersion)) {
     throw new Error('无效的版本号格式');
   }
 
-  const { major, minor, patch, prereleaseType: currentPrereleaseType, prereleaseNum } = versionParts;
-  let newVersion: string;
+  const { type: currentPrereleaseType } = getPrereleaseInfo(currentVersion);
 
   // 如果当前是预发布版本
   if (currentPrereleaseType) {
     if (isPrerelease && prereleaseType) {
       if (prereleaseType === currentPrereleaseType) {
-        // 相同类型: 递增版本号
-        newVersion = `${major}.${minor}.${patch}-${currentPrereleaseType}.${(prereleaseNum || 0) + 1}`;
+        // 相同类型: 递增预发布版本号
+        return semver.inc(currentVersion, 'prerelease', prereleaseType) || currentVersion;
       } else {
         // 不同类型: 检查升级路径
-        const prereleaseOrder: PrereleaseType[] = ['alpha', 'beta', 'rc'];
+        const prereleaseOrder: PrereleaseType[] = ['dev', 'alpha', 'beta', 'rc'];
         const currentIndex = prereleaseOrder.indexOf(currentPrereleaseType);
         const newIndex = prereleaseOrder.indexOf(prereleaseType);
         
         if (newIndex > currentIndex) {
-          // 升级预发布类型 (alpha -> beta -> rc)
-          newVersion = `${major}.${minor}.${patch}-${prereleaseType}.0`;
+          // 升级预发布类型 (dev -> alpha -> beta -> rc)
+          const baseVersion = `${semver.major(currentVersion)}.${semver.minor(currentVersion)}.${semver.patch(currentVersion)}`;
+          return `${baseVersion}-${prereleaseType}.0`;
         } else {
           console.log(chalk.yellow(`\n⚠️  警告: 从 ${currentPrereleaseType} 切换到 ${prereleaseType} 是降级操作`));
-          newVersion = `${major}.${minor}.${patch}-${prereleaseType}.0`;
+          const baseVersion = `${semver.major(currentVersion)}.${semver.minor(currentVersion)}.${semver.patch(currentVersion)}`;
+          return `${baseVersion}-${prereleaseType}.0`;
         }
       }
     } else {
       // 预发布 -> 正式版: 去掉预发布后缀
-      newVersion = `${major}.${minor}.${patch}`;
+      return `${semver.major(currentVersion)}.${semver.minor(currentVersion)}.${semver.patch(currentVersion)}`;
     }
   } else {
     // 当前是正式版本
-    let newMajor = major;
-    let newMinor = minor;
-    let newPatch = patch;
-
-    switch (releaseType) {
-      case 'major':
-        newMajor = major + 1;
-        newMinor = 0;
-        newPatch = 0;
-        break;
-      case 'minor':
-        newMinor = minor + 1;
-        newPatch = 0;
-        break;
-      case 'patch':
-        newPatch = patch + 1;
-        break;
-    }
-
-    newVersion = `${newMajor}.${newMinor}.${newPatch}`;
+    let newVersion: string;
 
     if (isPrerelease && prereleaseType) {
-      newVersion += `-${prereleaseType}.0`;
+      // 正式版 -> 预发布版: 先递增版本，然后添加预发布标识
+      newVersion = semver.inc(currentVersion, releaseType) || currentVersion;
+      return `${newVersion}-${prereleaseType}.0`;
+    } else {
+      // 正式版 -> 正式版: 直接递增
+      return semver.inc(currentVersion, releaseType) || currentVersion;
+    }
+  }
+}
+
+function showHelp(): void {
+  console.log(chalk.blue.bold('\n🔢 bump-version-js - 语义化版本管理工具\n'));
+  
+  console.log(chalk.white('用法:'));
+  console.log(chalk.cyan('  bump-version-js [command] [options]'));
+  console.log(chalk.cyan('  bvj [command] [options]\n'));
+  
+  console.log(chalk.white('命令:'));
+  console.log(chalk.green('  validate <version>') + chalk.gray('  验证版本号是否符合语义化版本规范'));
+  console.log(chalk.gray('  (无命令)') + chalk.gray('            交互式版本管理（默认）\n'));
+  
+  console.log(chalk.white('选项:'));
+  console.log(chalk.green('  -h, --help') + chalk.gray('         显示帮助信息'));
+  console.log(chalk.green('  -v, --version') + chalk.gray('      显示版本号\n'));
+  
+  console.log(chalk.white('功能说明:'));
+  console.log(chalk.gray('  1. 版本管理（默认）：'));
+  console.log(chalk.gray('     • 自动更新项目版本号（遵循语义化版本规范）'));
+  console.log(chalk.gray('     • 创建 Git 提交和标签'));
+  console.log(chalk.gray('     • 支持正式版本和预发布版本（dev/alpha/beta/rc）'));
+  console.log(chalk.gray('     • 一键推送到远程仓库\n'));
+  
+  console.log(chalk.gray('  2. 版本验证：'));
+  console.log(chalk.gray('     • 检查版本号格式是否正确'));
+  console.log(chalk.gray('     • 显示版本号各组成部分'));
+  console.log(chalk.gray('     • 识别预发布版本类型\n'));
+  
+  console.log(chalk.white('使用示例:'));
+  console.log(chalk.gray('  # 交互式版本管理'));
+  console.log(chalk.gray('  $ bump-version-js'));
+  console.log(chalk.gray('  $ bvj\n'));
+  
+  console.log(chalk.gray('  # 验证版本号'));
+  console.log(chalk.gray('  $ bump-version-js validate 1.0.0'));
+  console.log(chalk.gray('  $ bvj validate 2.1.0-alpha.3\n'));
+  
+  console.log(chalk.white('更多信息:'));
+  console.log(chalk.gray('  文档: https://github.com/ai-app-base/bump-version-js'));
+  console.log(chalk.gray('  问题: https://github.com/ai-app-base/bump-version-js/issues\n'));
+}
+
+function showVersion(): void {
+  const __filename = fileURLToPath(import.meta.url);
+  const __dirname = dirname(__filename);
+  const packageJsonPath = join(__dirname, '..', 'package.json');
+  const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf8'));
+  console.log(packageJson.version);
+}
+
+function validateVersion(version: string): boolean {
+  // 检查版本号是否为有效的语义化版本
+  if (!semver.valid(version)) {
+    console.error(chalk.red(`❌ 版本号 "${version}" 不符合语义化版本规范`));
+    console.error(chalk.yellow('\n语义化版本格式: MAJOR.MINOR.PATCH[-PRERELEASE]'));
+    console.error(chalk.yellow('示例: 1.0.0, 2.1.3, 1.0.0-alpha.1, 2.0.0-beta.3'));
+    return false;
+  }
+
+  // 解析版本号
+  const parsed = semver.parse(version);
+  if (!parsed) {
+    console.error(chalk.red(`❌ 无法解析版本号 "${version}"`));
+    return false;
+  }
+
+  // 显示版本号详情
+  console.log(chalk.green(`✅ 版本号 "${version}" 符合语义化版本规范`));
+  console.log(chalk.cyan('\n📊 版本号详情:'));
+  console.log(chalk.white(`  主版本号 (Major): ${parsed.major}`));
+  console.log(chalk.white(`  次版本号 (Minor): ${parsed.minor}`));
+  console.log(chalk.white(`  修订号 (Patch): ${parsed.patch}`));
+
+  // 如果有预发布版本信息
+  if (parsed.prerelease.length > 0) {
+    console.log(chalk.white(`  预发布版本: ${parsed.prerelease.join('.')}`));
+    
+    // 检查预发布类型
+    const prereleaseType = parsed.prerelease[0];
+    const supportedTypes = ['dev', 'alpha', 'beta', 'rc'];
+    
+    if (typeof prereleaseType === 'string' && supportedTypes.includes(prereleaseType)) {
+      const typeDescriptions = {
+        'dev': '开发版本',
+        'alpha': '内部测试版本',
+        'beta': '公开测试版本',
+        'rc': '候选发布版本'
+      };
+      console.log(chalk.white(`  预发布类型: ${prereleaseType} (${typeDescriptions[prereleaseType as keyof typeof typeDescriptions]})`));
     }
   }
 
-  return newVersion;
+  // 如果有构建元数据
+  if (parsed.build.length > 0) {
+    console.log(chalk.white(`  构建元数据: ${parsed.build.join('.')}`));
+  }
+
+  return true;
 }
 
 async function main(): Promise<void> {
+  // 处理命令行参数
+  const args = process.argv.slice(2);
+  
+  if (args.includes('-h') || args.includes('--help')) {
+    showHelp();
+    process.exit(0);
+  }
+  
+  if (args.includes('-v') || args.includes('--version')) {
+    showVersion();
+    process.exit(0);
+  }
+  
+  // 处理 validate 子命令
+  if (args[0] === 'validate') {
+    if (args.length < 2) {
+      console.error(chalk.red('❌ 请提供要验证的版本号'));
+      console.error(chalk.yellow('\n用法: bump-version-js validate <version>'));
+      console.error(chalk.yellow('示例: bump-version-js validate 1.0.0'));
+      process.exit(1);
+    }
+    
+    const version = args[1];
+    const isValid = validateVersion(version);
+    process.exit(isValid ? 0 : 1);
+  }
+  
+  // 默认执行版本管理功能
   console.log(chalk.blue.bold('\n🔢 版本号管理工具\n'));
 
   // 检查当前状态
@@ -180,15 +286,22 @@ async function main(): Promise<void> {
   }
 
   // 检查当前是否是预发布版本
-  const versionParts = parseVersion(currentVersion);
-  const currentPrereleaseType = versionParts?.prereleaseType;
+  const { type: currentPrereleaseType } = getPrereleaseInfo(currentVersion);
 
   // 构建发布类型选项
   const releaseTypeChoices: prompts.Choice[] = [
     { title: '正式版本 (Production)', value: 'production', description: '稳定版本，供生产环境使用' }
   ];
 
-  if (!currentPrereleaseType || currentPrereleaseType === 'alpha') {
+  if (!currentPrereleaseType || currentPrereleaseType === 'dev') {
+    releaseTypeChoices.push({ 
+      title: 'Dev 版本', 
+      value: 'dev', 
+      description: '开发版本，用于开发过程中的版本管理' 
+    });
+  }
+
+  if (!currentPrereleaseType || currentPrereleaseType === 'dev' || currentPrereleaseType === 'alpha') {
     releaseTypeChoices.push({ 
       title: 'Alpha 版本', 
       value: 'alpha', 
@@ -196,7 +309,7 @@ async function main(): Promise<void> {
     });
   }
   
-  if (!currentPrereleaseType || currentPrereleaseType === 'alpha' || currentPrereleaseType === 'beta') {
+  if (!currentPrereleaseType || currentPrereleaseType === 'dev' || currentPrereleaseType === 'alpha' || currentPrereleaseType === 'beta') {
     releaseTypeChoices.push({ 
       title: 'Beta 版本', 
       value: 'beta', 
@@ -204,7 +317,7 @@ async function main(): Promise<void> {
     });
   }
   
-  if (!currentPrereleaseType || currentPrereleaseType === 'alpha' || currentPrereleaseType === 'beta' || currentPrereleaseType === 'rc') {
+  if (!currentPrereleaseType || currentPrereleaseType === 'dev' || currentPrereleaseType === 'alpha' || currentPrereleaseType === 'beta' || currentPrereleaseType === 'rc') {
     releaseTypeChoices.push({ 
       title: 'RC 版本', 
       value: 'rc', 
@@ -237,7 +350,7 @@ async function main(): Promise<void> {
     if (isPrerelease && prereleaseType === currentPrereleaseType) {
       console.log(chalk.yellow(`\n当前是 ${currentPrereleaseType} 版本，将自动递增版本号`));
     } else if (isPrerelease) {
-      const prereleaseNames = { alpha: 'Alpha', beta: 'Beta', rc: 'RC' };
+      const prereleaseNames = { dev: 'Dev', alpha: 'Alpha', beta: 'Beta', rc: 'RC' };
       console.log(chalk.yellow(`\n当前是 ${prereleaseNames[currentPrereleaseType]} 版本，将切换到 ${prereleaseNames[prereleaseType!]} 版本`));
     } else {
       console.log(chalk.yellow(`\n当前是 ${currentPrereleaseType} 版本，将发布为正式版本`));
@@ -292,6 +405,7 @@ async function main(): Promise<void> {
   let releaseTypeName = '正式版本';
   if (isPrerelease) {
     const prereleaseNames = { 
+      dev: 'Dev (开发版本)',
       alpha: 'Alpha (内部测试)', 
       beta: 'Beta (公开测试)', 
       rc: 'RC (候选发布)' 
@@ -362,7 +476,7 @@ async function main(): Promise<void> {
     console.log(chalk.white('如果配置了 CI/CD，将自动执行后续流程...'));
     
     // 显示部署后的访问地址
-    const workerName = newVersion.replace(/\./g, '-').replace(/-(alpha|beta|rc)-/, '-$1');
+    const workerName = newVersion.replace(/\./g, '-').replace(/-(dev|alpha|beta|rc)-/, '-$1');
     console.log(chalk.blue.bold('\n🌐 部署后访问地址:'));
     console.log(chalk.white(`  https://website-${workerName}.<your-subdomain>.workers.dev`));
     
@@ -398,7 +512,7 @@ process.on('unhandledRejection', (error) => {
 });
 
 // 导出函数以便测试
-export { exec, getCurrentVersion, getCurrentBranch, checkGitStatus, getNextVersion, parseVersion };
+export { exec, getCurrentVersion, getCurrentBranch, checkGitStatus, getNextVersion, validateVersion };
 
 // 仅在直接运行时执行 main 函数
 main().catch(console.error);

@@ -165,6 +165,55 @@ describe('bump-version integration tests', () => {
   });
 
   describe('prerelease versions', () => {
+    it('should create dev version from production', async () => {
+      testRepo = await createTestRepo('1.0.0');
+      
+      const { stdout } = await execa('node', [bumpVersionPath], {
+        cwd: testRepo.path,
+        env: createTestEnv({
+          releaseTypeChoice: 'dev',
+          selectedVersionBump: 'patch',
+          confirm: true
+        })
+      });
+      
+      const newVersion = await getVersion(testRepo.path);
+      expect(newVersion).toBe('1.0.1-dev.0');
+      
+      const tags = await getTags(testRepo.path);
+      expect(tags).toContain('v1.0.1-dev.0');
+    });
+
+    it('should increment dev version', async () => {
+      testRepo = await createTestRepo('1.0.0-dev.0');
+      
+      const { stdout } = await execa('node', [bumpVersionPath], {
+        cwd: testRepo.path,
+        env: createTestEnv({
+          releaseTypeChoice: 'dev',
+          confirm: true
+        })
+      });
+      
+      const newVersion = await getVersion(testRepo.path);
+      expect(newVersion).toBe('1.0.0-dev.1');
+    });
+
+    it('should upgrade from dev to alpha', async () => {
+      testRepo = await createTestRepo('1.0.0-dev.3');
+      
+      const { stdout } = await execa('node', [bumpVersionPath], {
+        cwd: testRepo.path,
+        env: createTestEnv({
+          releaseTypeChoice: 'alpha',
+          confirm: true
+        })
+      });
+      
+      const newVersion = await getVersion(testRepo.path);
+      expect(newVersion).toBe('1.0.0-alpha.0');
+    });
+
     it('should create alpha version from production', async () => {
       testRepo = await createTestRepo('1.0.0');
       
@@ -308,6 +357,52 @@ describe('bump-version integration tests', () => {
       const newVersion = await getVersion(testRepo.path);
       expect(newVersion).toBe('1.0.0-rc.10');
     });
+
+    it('should convert dev to production release', async () => {
+      testRepo = await createTestRepo('1.0.0-dev.5');
+      
+      const { stdout } = await execa('node', [bumpVersionPath], {
+        cwd: testRepo.path,
+        env: createTestEnv({
+          releaseTypeChoice: 'production',
+          confirm: true
+        })
+      });
+      
+      const newVersion = await getVersion(testRepo.path);
+      expect(newVersion).toBe('1.0.0');
+    });
+
+    it('should create dev version with major bump', async () => {
+      testRepo = await createTestRepo('1.2.3');
+      
+      const { stdout } = await execa('node', [bumpVersionPath], {
+        cwd: testRepo.path,
+        env: createTestEnv({
+          releaseTypeChoice: 'dev',
+          selectedVersionBump: 'major',
+          confirm: true
+        })
+      });
+      
+      const newVersion = await getVersion(testRepo.path);
+      expect(newVersion).toBe('2.0.0-dev.0');
+    });
+
+    it('should handle dev version with high iteration number', async () => {
+      testRepo = await createTestRepo('1.0.0-dev.15');
+      
+      const { stdout } = await execa('node', [bumpVersionPath], {
+        cwd: testRepo.path,
+        env: createTestEnv({
+          releaseTypeChoice: 'dev',
+          confirm: true
+        })
+      });
+      
+      const newVersion = await getVersion(testRepo.path);
+      expect(newVersion).toBe('1.0.0-dev.16');
+    });
   });
 
   describe('error handling', () => {
@@ -410,6 +505,95 @@ describe('bump-version integration tests', () => {
       // 获取标签信息
       const { stdout } = await execa('git', ['tag', '-n', 'v1.0.1'], { cwd: testRepo.path });
       expect(stdout).toContain('Release 1.0.1');
+    });
+  });
+
+  describe('validate command', () => {
+    it('should validate correct version numbers', async () => {
+      const { stdout, exitCode } = await execa('node', [bumpVersionPath, 'validate', '1.0.0'], {
+        reject: false,
+        env: { FORCE_COLOR: '0' }
+      });
+      
+      expect(exitCode).toBe(0);
+      expect(stdout).toContain('✅ 版本号 "1.0.0" 符合语义化版本规范');
+      expect(stdout).toContain('主版本号 (Major): 1');
+      expect(stdout).toContain('次版本号 (Minor): 0');
+      expect(stdout).toContain('修订号 (Patch): 0');
+    });
+
+    it('should validate prerelease versions', async () => {
+      const { stdout, exitCode } = await execa('node', [bumpVersionPath, 'validate', '2.1.0-alpha.3'], {
+        reject: false,
+        env: { FORCE_COLOR: '0' }
+      });
+      
+      expect(exitCode).toBe(0);
+      expect(stdout).toContain('✅ 版本号 "2.1.0-alpha.3" 符合语义化版本规范');
+      expect(stdout).toContain('预发布版本: alpha.3');
+      expect(stdout).toContain('预发布类型: alpha (内部测试版本)');
+    });
+
+    it('should validate dev versions', async () => {
+      const { stdout, exitCode } = await execa('node', [bumpVersionPath, 'validate', '1.0.0-dev.0'], {
+        reject: false,
+        env: { FORCE_COLOR: '0' }
+      });
+      
+      expect(exitCode).toBe(0);
+      expect(stdout).toContain('预发布类型: dev (开发版本)');
+    });
+
+    it('should validate beta versions', async () => {
+      const { stdout, exitCode } = await execa('node', [bumpVersionPath, 'validate', '3.0.0-beta.1'], {
+        reject: false,
+        env: { FORCE_COLOR: '0' }
+      });
+      
+      expect(exitCode).toBe(0);
+      expect(stdout).toContain('预发布类型: beta (公开测试版本)');
+    });
+
+    it('should validate rc versions', async () => {
+      const { stdout, exitCode } = await execa('node', [bumpVersionPath, 'validate', '2.0.0-rc.0'], {
+        reject: false,
+        env: { FORCE_COLOR: '0' }
+      });
+      
+      expect(exitCode).toBe(0);
+      expect(stdout).toContain('预发布类型: rc (候选发布版本)');
+    });
+
+    it('should validate versions with build metadata', async () => {
+      const { stdout, exitCode } = await execa('node', [bumpVersionPath, 'validate', '1.0.0+build.123'], {
+        reject: false,
+        env: { FORCE_COLOR: '0' }
+      });
+      
+      expect(exitCode).toBe(0);
+      expect(stdout).toContain('构建元数据: build.123');
+    });
+
+    it('should reject invalid version numbers', async () => {
+      const { stderr, exitCode } = await execa('node', [bumpVersionPath, 'validate', 'invalid-version'], {
+        reject: false,
+        env: { FORCE_COLOR: '0' }
+      });
+      
+      expect(exitCode).toBe(1);
+      expect(stderr).toContain('❌ 版本号 "invalid-version" 不符合语义化版本规范');
+      expect(stderr).toContain('语义化版本格式: MAJOR.MINOR.PATCH[-PRERELEASE]');
+    });
+
+    it('should reject when no version provided', async () => {
+      const { stderr, exitCode } = await execa('node', [bumpVersionPath, 'validate'], {
+        reject: false,
+        env: { FORCE_COLOR: '0' }
+      });
+      
+      expect(exitCode).toBe(1);
+      expect(stderr).toContain('❌ 请提供要验证的版本号');
+      expect(stderr).toContain('用法: bump-version-js validate <version>');
     });
   });
 });
