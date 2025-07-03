@@ -16,7 +16,11 @@
     "test:ui": "vitest --ui",
     "coverage": "vitest run --coverage",
     "prebuild": "rimraf dist",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build",
+    "prepare": "husky",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "typecheck": "tsc --noEmit"
   },
   "repository": {
     "type": "git",
@@ -29,13 +33,18 @@
   },
   "homepage": "https://github.com/ai-app-base/bump-version-js#readme",
   "devDependencies": {
+    "@eslint/js": "^9.30.1",
     "@types/node": "^24.0.10",
     "@types/prompts": "^2.4.9",
     "@vitest/ui": "^3.2.4",
+    "eslint": "^9.30.1",
     "execa": "^9.6.0",
+    "husky": "^9.1.7",
+    "prettier": "^3.6.2",
     "rimraf": "^6.0.1",
     "tsx": "^4.20.3",
     "typescript": "^5.8.3",
+    "typescript-eslint": "^8.35.1",
     "vitest": "^3.2.4"
   },
   "dependencies": {

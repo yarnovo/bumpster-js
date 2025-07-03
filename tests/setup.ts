@@ -17,7 +17,7 @@ afterAll(async () => {
     console.log('✅ 测试目录已清理');
   } catch (error) {
     // 如果目录不存在，忽略错误
-    if ((error as any).code !== 'ENOENT') {
+    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
       console.warn('Failed to clean up test repositories directory:', error);
     }
   }

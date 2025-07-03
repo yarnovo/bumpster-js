@@ -14,7 +14,7 @@ interface TestRepo {
   cleanup: () => Promise<void>;
 }
 
-function createTestEnv(defaults: any = {}) {
+function createTestEnv(defaults: Record<string, unknown> = {}): NodeJS.ProcessEnv {
   return {
     ...process.env,
     FORCE_COLOR: '0',
@@ -128,7 +128,7 @@ describe('bump-version integration tests', () => {
     it('should bump minor version for production release', async () => {
       testRepo = await createTestRepo('1.0.0');
       
-      const { stdout } = await execa('node', [bumpVersionPath], {
+      const { stdout: _stdout } = await execa('node', [bumpVersionPath], {
         cwd: testRepo.path,
         env: createTestEnv({
           releaseTypeChoice: 'production',
@@ -147,7 +147,7 @@ describe('bump-version integration tests', () => {
     it('should bump major version for production release', async () => {
       testRepo = await createTestRepo('1.0.0');
       
-      const { stdout } = await execa('node', [bumpVersionPath], {
+      const { stdout: _stdout } = await execa('node', [bumpVersionPath], {
         cwd: testRepo.path,
         env: createTestEnv({
           releaseTypeChoice: 'production',
@@ -168,7 +168,7 @@ describe('bump-version integration tests', () => {
     it('should create dev version from production', async () => {
       testRepo = await createTestRepo('1.0.0');
       
-      const { stdout } = await execa('node', [bumpVersionPath], {
+      const { stdout: _stdout } = await execa('node', [bumpVersionPath], {
         cwd: testRepo.path,
         env: createTestEnv({
           releaseTypeChoice: 'dev',
@@ -187,7 +187,7 @@ describe('bump-version integration tests', () => {
     it('should increment dev version', async () => {
       testRepo = await createTestRepo('1.0.0-dev.0');
       
-      const { stdout } = await execa('node', [bumpVersionPath], {
+      const { stdout: _stdout } = await execa('node', [bumpVersionPath], {
         cwd: testRepo.path,
         env: createTestEnv({
           releaseTypeChoice: 'dev',
@@ -202,7 +202,7 @@ describe('bump-version integration tests', () => {
     it('should upgrade from dev to alpha', async () => {
       testRepo = await createTestRepo('1.0.0-dev.3');
       
-      const { stdout } = await execa('node', [bumpVersionPath], {
+      const { stdout: _stdout } = await execa('node', [bumpVersionPath], {
         cwd: testRepo.path,
         env: createTestEnv({
           releaseTypeChoice: 'alpha',
@@ -217,7 +217,7 @@ describe('bump-version integration tests', () => {
     it('should create alpha version from production', async () => {
       testRepo = await createTestRepo('1.0.0');
       
-      const { stdout } = await execa('node', [bumpVersionPath], {
+      const { stdout: _stdout } = await execa('node', [bumpVersionPath], {
         cwd: testRepo.path,
         env: createTestEnv({
           releaseTypeChoice: 'alpha',
@@ -236,7 +236,7 @@ describe('bump-version integration tests', () => {
     it('should increment alpha version', async () => {
       testRepo = await createTestRepo('1.0.0-alpha.0');
       
-      const { stdout } = await execa('node', [bumpVersionPath], {
+      const { stdout: _stdout } = await execa('node', [bumpVersionPath], {
         cwd: testRepo.path,
         env: createTestEnv({
           releaseTypeChoice: 'alpha',
@@ -251,7 +251,7 @@ describe('bump-version integration tests', () => {
     it('should upgrade from alpha to beta', async () => {
       testRepo = await createTestRepo('1.0.0-alpha.3');
       
-      const { stdout } = await execa('node', [bumpVersionPath], {
+      const { stdout: _stdout } = await execa('node', [bumpVersionPath], {
         cwd: testRepo.path,
         env: createTestEnv({
           releaseTypeChoice: 'beta',
@@ -266,7 +266,7 @@ describe('bump-version integration tests', () => {
     it('should upgrade from beta to rc', async () => {
       testRepo = await createTestRepo('1.0.0-beta.2');
       
-      const { stdout } = await execa('node', [bumpVersionPath], {
+      const { stdout: _stdout } = await execa('node', [bumpVersionPath], {
         cwd: testRepo.path,
         env: createTestEnv({
           releaseTypeChoice: 'rc',
@@ -281,7 +281,7 @@ describe('bump-version integration tests', () => {
     it('should convert rc to production release', async () => {
       testRepo = await createTestRepo('1.0.0-rc.1');
       
-      const { stdout } = await execa('node', [bumpVersionPath], {
+      const { stdout: _stdout } = await execa('node', [bumpVersionPath], {
         cwd: testRepo.path,
         env: createTestEnv({
           releaseTypeChoice: 'production',
@@ -296,7 +296,7 @@ describe('bump-version integration tests', () => {
     it('should increment rc version', async () => {
       testRepo = await createTestRepo('1.0.0-rc.0');
       
-      const { stdout } = await execa('node', [bumpVersionPath], {
+      const { stdout: _stdout } = await execa('node', [bumpVersionPath], {
         cwd: testRepo.path,
         env: createTestEnv({
           releaseTypeChoice: 'rc',
@@ -311,7 +311,7 @@ describe('bump-version integration tests', () => {
     it('should create rc version from production with minor bump', async () => {
       testRepo = await createTestRepo('1.0.0');
       
-      const { stdout } = await execa('node', [bumpVersionPath], {
+      const { stdout: _stdout } = await execa('node', [bumpVersionPath], {
         cwd: testRepo.path,
         env: createTestEnv({
           releaseTypeChoice: 'rc',
@@ -330,7 +330,7 @@ describe('bump-version integration tests', () => {
     it('should create rc version from production with major bump', async () => {
       testRepo = await createTestRepo('1.5.3');
       
-      const { stdout } = await execa('node', [bumpVersionPath], {
+      const { stdout: _stdout } = await execa('node', [bumpVersionPath], {
         cwd: testRepo.path,
         env: createTestEnv({
           releaseTypeChoice: 'rc',
@@ -346,7 +346,7 @@ describe('bump-version integration tests', () => {
     it('should handle rc version with high iteration number', async () => {
       testRepo = await createTestRepo('1.0.0-rc.9');
       
-      const { stdout } = await execa('node', [bumpVersionPath], {
+      const { stdout: _stdout } = await execa('node', [bumpVersionPath], {
         cwd: testRepo.path,
         env: createTestEnv({
           releaseTypeChoice: 'rc',
@@ -361,7 +361,7 @@ describe('bump-version integration tests', () => {
     it('should convert dev to production release', async () => {
       testRepo = await createTestRepo('1.0.0-dev.5');
       
-      const { stdout } = await execa('node', [bumpVersionPath], {
+      const { stdout: _stdout } = await execa('node', [bumpVersionPath], {
         cwd: testRepo.path,
         env: createTestEnv({
           releaseTypeChoice: 'production',
@@ -376,7 +376,7 @@ describe('bump-version integration tests', () => {
     it('should create dev version with major bump', async () => {
       testRepo = await createTestRepo('1.2.3');
       
-      const { stdout } = await execa('node', [bumpVersionPath], {
+      const { stdout: _stdout } = await execa('node', [bumpVersionPath], {
         cwd: testRepo.path,
         env: createTestEnv({
           releaseTypeChoice: 'dev',
@@ -392,7 +392,7 @@ describe('bump-version integration tests', () => {
     it('should handle dev version with high iteration number', async () => {
       testRepo = await createTestRepo('1.0.0-dev.15');
       
-      const { stdout } = await execa('node', [bumpVersionPath], {
+      const { stdout: _stdout } = await execa('node', [bumpVersionPath], {
         cwd: testRepo.path,
         env: createTestEnv({
           releaseTypeChoice: 'dev',
