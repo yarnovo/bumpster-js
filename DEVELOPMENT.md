@@ -177,6 +177,62 @@ npm run build
 构建产物：
 - `dist/bump-version.js`: 统一的命令行工具（包含所有功能）
 
+## 本地测试
+
+### 使用 npm link 进行本地测试
+
+`npm link` 允许你在本地测试包而无需发布到 npm。
+
+#### 链接包
+
+1. **在包目录中创建全局链接**
+   ```bash
+   npm link
+   ```
+   这会在全局 node_modules 中创建一个符号链接指向当前包。
+
+2. **在其他项目中使用链接的包**
+   ```bash
+   cd /path/to/other-project
+   npm link @ai-app-base/bump-version-js
+   ```
+
+#### 卸载链接
+
+1. **从其他项目中移除链接**
+   ```bash
+   cd /path/to/other-project
+   npm unlink @ai-app-base/bump-version-js
+   # 或
+   npm uninstall @ai-app-base/bump-version-js
+   ```
+
+2. **移除全局链接**
+   ```bash
+   # 方法1：在任何目录运行
+   npm uninstall -g @ai-app-base/bump-version-js
+   
+   # 方法2：在包目录运行
+   cd /path/to/bump-version-js
+   npm unlink @ai-app-base/bump-version-js
+   ```
+
+#### 查看全局链接的包
+
+```bash
+# 查看所有全局安装的包
+npm list -g --depth=0
+
+# 查看具体包的链接位置
+npm list -g @ai-app-base/bump-version-js
+```
+
+#### 注意事项
+
+- `npm unlink` 是 `npm uninstall` 的别名
+- 在包目录中执行 `npm unlink` 时也需要指定包名
+- 也可以使用 `npm rm` 或 `npm remove` 作为 `npm uninstall` 的别名
+
 ## 发布流程
 
 1. **本地测试**
