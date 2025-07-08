@@ -116,5 +116,17 @@ bumpster/
 - `eslint.config.js` 中使用 `prettier/prettier` 规则
 - 通过 `prettierConfig.rules` 禁用冲突的 ESLint 规则
 
-<!-- 最后更新时间: 2025-01-08T14:05:49+08:00 -->
-<!-- 最后检查时间: 2025-01-08T14:05:49+08:00 -->
+### lint-staged 配置优化
+
+为避免重复格式化，`lint-staged` 配置已优化：
+
+- **TypeScript 文件** (`*.{ts,tsx}`)：只运行 `eslint --fix`
+  - ESLint 通过 `prettier/prettier` 规则自动格式化代码
+  - 不需要单独运行 `prettier --write`
+- **其他文件** (`*.{json,md}`)：运行 `prettier --write`
+  - 这些文件 ESLint 不处理，需要直接用 Prettier
+
+这样可以提高 Git 提交效率，避免重复格式化操作。
+
+<!-- 最后更新时间: 2025-01-08T14:09:23+08:00 -->
+<!-- 最后检查时间: 2025-01-08T14:09:23+08:00 -->
