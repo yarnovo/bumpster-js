@@ -87,6 +87,7 @@ bump-js [command] [options]
 
 - `-h, --help`: 显示帮助信息
 - `-v, --version`: 显示工具版本号
+- `--dry-run`: 预览操作但不实际执行（无副作用）
 
 ### 版本管理（默认模式）
 
@@ -122,6 +123,21 @@ bump-js
    - 查看版本变更详情
    - 确认执行步骤
    - 输入 y 确认或 n 取消
+
+#### Dry-Run 模式
+
+使用 `--dry-run` 选项可以预览所有操作而不实际执行：
+
+```bash
+bump --dry-run
+```
+
+Dry-Run 模式特点：
+
+- 显示 "🧪 DRY-RUN 模式" 提示
+- 预览所有 Git 操作（commit、tag、push）但不执行
+- 预览文件更新（package.json、package-lock.json）但不写入
+- 每个操作都会显示 "[DRY-RUN] 将执行: xxx"
 
 ### 版本验证
 
