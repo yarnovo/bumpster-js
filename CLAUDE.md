@@ -128,5 +128,27 @@ bumpster/
 
 这样可以提高 Git 提交效率，避免重复格式化操作。
 
-<!-- 最后更新时间: 2025-01-08T14:09:23+08:00 -->
-<!-- 最后检查时间: 2025-01-08T14:12:33+08:00 -->
+## CI/CD 配置
+
+### GitHub Actions 权限配置
+
+项目使用 GitHub Actions 进行持续集成和部署。关键配置：
+
+1. **权限声明**（必须）：
+
+   ```yaml
+   permissions:
+     contents: write # 允许创建 release
+     packages: write # 允许发布包
+   ```
+
+2. **Release 创建**：
+   - 使用 `softprops/action-gh-release@v1` 替代过时的 `actions/create-release@v1`
+   - 避免 "Resource not accessible by integration" 错误
+
+3. **NPM 发布配置**：
+   - 需要在仓库设置中配置 `NPM_TOKEN` secret
+   - 包名已更新为 `bumpster`
+
+<!-- 最后更新时间: 2025-01-08T14:13:42+08:00 -->
+<!-- 最后检查时间: 2025-01-08T14:13:42+08:00 -->
