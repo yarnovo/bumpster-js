@@ -11,6 +11,9 @@ on:
 jobs:
   ci-cd:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
 
     steps:
       - name: Checkout code
@@ -89,22 +92,20 @@ jobs:
 
       - name: Create GitHub Release
         if: startsWith(github.ref, 'refs/tags/v')
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: softprops/action-gh-release@v1
         with:
-          tag_name: ${{ github.ref_name }}
-          release_name: Release ${{ github.ref_name }}
           body: |
             ## 🎉 Release ${{ github.ref_name }}
 
             ### 📦 Installation
             ```bash
-            npm install -g @ai-app-base/bump-version-js@${{ github.ref_name }}
+            npm install -g bumpster@${{ github.ref_name }}
             ```
 
             ### 🔗 Links
-            - [npm package](https://www.npmjs.com/package/@ai-app-base/bump-version-js)
+            - [npm package](https://www.npmjs.com/package/bumpster)
             - [Changelog](https://github.com/${{ github.repository }}/compare/previous-tag...${{ github.ref_name }})
           draft: false
           prerelease: ${{ contains(github.ref_name, '-') }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
