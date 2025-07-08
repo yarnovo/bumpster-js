@@ -12,9 +12,21 @@ type ReleaseType = 'major' | 'minor' | 'patch';
 type PrereleaseType = 'dev' | 'alpha' | 'beta' | 'rc';
 type ReleaseChoice = 'production' | PrereleaseType | 'custom';
 
+// 全局变量存储 dry-run 状态
+let isDryRun = false;
+
 // 执行命令并返回结果
 function exec(command: string, silent: boolean = false): string {
   try {
+    if (
+      isDryRun &&
+      (command.includes('git push') ||
+        command.includes('git tag') ||
+        command.includes('git commit'))
+    ) {
+      if (!silent) console.log(chalk.gray(`[DRY-RUN] 将执行: ${command}`));
+      return '';
+    }
     const result = execSync(command, { encoding: 'utf8' });
     if (!silent) console.log(result.trim());
     return result.trim();
@@ -143,7 +155,8 @@ function showHelp(): void {
 
   console.log(chalk.white('选项:'));
   console.log(chalk.green('  -h, --help') + chalk.gray('         显示帮助信息'));
-  console.log(chalk.green('  -v, --version') + chalk.gray('      显示版本号\n'));
+  console.log(chalk.green('  -v, --version') + chalk.gray('      显示版本号'));
+  console.log(chalk.green('  --dry-run') + chalk.gray('          预览操作但不实际执行\n'));
 
   console.log(chalk.white('功能说明:'));
   console.log(chalk.gray('  1. 版本管理（默认）：'));
@@ -237,6 +250,14 @@ async function main(): Promise<void> {
   // 处理命令行参数
   const args = process.argv.slice(2);
 
+  // 检查 dry-run 参数
+  if (args.includes('--dry-run')) {
+    isDryRun = true;
+    // 从参数列表中移除 --dry-run
+    const index = args.indexOf('--dry-run');
+    args.splice(index, 1);
+  }
+
   if (args.includes('-h') || args.includes('--help')) {
     showHelp();
     process.exit(0);
@@ -263,6 +284,11 @@ async function main(): Promise<void> {
 
   // 默认执行版本管理功能
   console.log(chalk.blue.bold('\n🔢 版本号管理工具\n'));
+
+  // 如果是 dry-run 模式，显示提示
+  if (isDryRun) {
+    console.log(chalk.yellow.bold('🧪 DRY-RUN 模式：仅预览操作，不会实际执行\n'));
+  }
 
   // 检查当前状态
   const currentVersion = getCurrentVersion();
@@ -523,9 +549,13 @@ async function main(): Promise<void> {
     const packageJson = JSON.parse(packageJsonContent);
     packageJson.version = newVersion;
 
-    // 写回文件，保持原有格式
-    const fs = await import('fs/promises');
-    await fs.writeFile('./package.json', JSON.stringify(packageJson, null, 2) + '\n');
+    if (isDryRun) {
+      console.log(chalk.gray('[DRY-RUN] 将更新 package.json 中的版本号'));
+    } else {
+      // 写回文件，保持原有格式
+      const fs = await import('fs/promises');
+      await fs.writeFile('./package.json', JSON.stringify(packageJson, null, 2) + '\n');
+    }
 
     // 如果存在 package-lock.json，也更新它
     try {
@@ -535,7 +565,12 @@ async function main(): Promise<void> {
       if (packageLock.packages && packageLock.packages['']) {
         packageLock.packages[''].version = newVersion;
       }
-      await fs.writeFile('./package-lock.json', JSON.stringify(packageLock, null, 2) + '\n');
+      if (isDryRun) {
+        console.log(chalk.gray('[DRY-RUN] 将更新 package-lock.json 中的版本号'));
+      } else {
+        const fs = await import('fs/promises');
+        await fs.writeFile('./package-lock.json', JSON.stringify(packageLock, null, 2) + '\n');
+      }
     } catch {
       // package-lock.json 可能不存在，忽略错误
     }
