@@ -1,6 +1,6 @@
 {
   "name": "bumpster",
-  "version": "0.1.0",
+  "version": "0.1.1-dev.0",
   "description": "A CLI tool for semantic version management",
   "main": "dist/bump-version.js",
   "type": "module",
