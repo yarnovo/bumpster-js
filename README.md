@@ -1,10 +1,10 @@
-# bump-version-js
+# bumpster
 
 一个智能的语义化版本管理命令行工具，专为现代 JavaScript/TypeScript 项目设计。
 
 ## 简介
 
-`bump-version-js` 是一个交互式的版本管理工具，它遵循[语义化版本规范](https://semver.org/)，支持正式版本和预发布版本的管理。该工具通过友好的命令行界面，自动化处理版本号更新、Git 提交和标签创建等繁琐的发布流程。
+`bumpster` 是一个交互式的版本管理工具，它遵循[语义化版本规范](https://semver.org/)，支持正式版本和预发布版本的管理。该工具通过友好的命令行界面，自动化处理版本号更新、Git 提交和标签创建等繁琐的发布流程。
 
 ## 职责
 
@@ -73,9 +73,9 @@ npm install --save-dev @ai-app-base/bump-version-js
 ### 命令语法
 
 ```bash
-bump-version-js [command] [options]
+bump [command] [options]
 # 或使用别名
-bvj [command] [options]
+bump-js [command] [options]
 ```
 
 ### 可用命令
@@ -93,9 +93,9 @@ bvj [command] [options]
 当不带任何命令运行时，进入交互式版本管理模式：
 
 ```bash
-bump-version-js
+bump
 # 或
-bvj
+bump-js
 ```
 
 #### 使用流程
@@ -103,7 +103,7 @@ bvj
 1. **启动工具**
 
    ```bash
-   bvj
+   bump
    ```
 
 2. **选择发布类型**
@@ -137,22 +137,22 @@ bvj validate <version>
 
 ```bash
 # 验证正式版本
-bvj validate 1.0.0
+bump validate 1.0.0
 # ✅ 版本号 "1.0.0" 符合语义化版本规范
 
 # 验证预发布版本
-bvj validate 2.1.0-alpha.3
+bump validate 2.1.0-alpha.3
 # ✅ 版本号 "2.1.0-alpha.3" 符合语义化版本规范
 # 显示详细信息包括预发布类型
 
 # 验证无效版本
-bvj validate invalid-version
-# ❌ 版本号 "invalid-version" 不符合语义化版本规范
+bump validate invalid-version
+# ❌ 版本号 "invalid-version" 不符合语义化版本规荣
 ```
 
 ## API 参考
 
-### bump-version-js / bvj
+### bump / bump-js
 
 统一的命令行工具，支持版本管理和版本验证功能。
 
@@ -161,8 +161,8 @@ bvj validate invalid-version
 **语法**：
 
 ```bash
-bump-version-js [options]
-bvj [options]
+bump [options]
+bump-js [options]
 ```
 
 **功能**：
@@ -182,8 +182,8 @@ bvj [options]
 **语法**：
 
 ```bash
-bump-version-js validate <version>
-bvj validate <version>
+bump validate <version>
+bump-js validate <version>
 ```
 
 **参数**：
@@ -216,6 +216,6 @@ bvj validate <version>
 ## 相关链接
 
 - [语义化版本规范](https://semver.org/)
-- [npm 包主页](https://www.npmjs.com/package/@ai-app-base/bump-version-js)
+- [npm 包主页](https://www.npmjs.com/package/bumpster)
 - [GitHub 仓库](https://github.com/ai-app-base/bump-version-js)
 - [问题反馈](https://github.com/ai-app-base/bump-version-js/issues)

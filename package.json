@@ -1,12 +1,12 @@
 {
-  "name": "@ai-app-base/bump-version-js",
+  "name": "bumpster",
   "version": "0.1.1",
   "description": "A CLI tool for semantic version management",
   "main": "dist/bump-version.js",
   "type": "module",
   "bin": {
-    "bump-version-js": "./dist/bump-version.js",
-    "bvj": "./dist/bump-version.js"
+    "bump": "./dist/bump-version.js",
+    "bump-js": "./dist/bump-version.js"
   },
   "scripts": {
     "build": "tsc",

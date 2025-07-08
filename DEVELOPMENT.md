@@ -1,6 +1,6 @@
 # 开发文档
 
-本文档包含 `bump-version-js` 项目的开发相关信息。
+本文档包含 `bumpster` 项目的开发相关信息。
 
 ## 环境要求
 
@@ -48,7 +48,7 @@ npm run prebuild
 ## 项目结构
 
 ```
-bump-version-js/
+bumpster/
 ├── src/                           # 源代码目录
 │   └── bump-version.ts           # 主程序（包含版本管理和验证功能）
 ├── tests/                        # 测试目录
@@ -200,7 +200,7 @@ npm run build
 2. **在其他项目中使用链接的包**
    ```bash
    cd /path/to/other-project
-   npm link @ai-app-base/bump-version-js
+   npm link bumpster
    ```
 
 #### 卸载链接
@@ -209,20 +209,20 @@ npm run build
 
    ```bash
    cd /path/to/other-project
-   npm unlink @ai-app-base/bump-version-js
+   npm unlink bumpster
    # 或
-   npm uninstall @ai-app-base/bump-version-js
+   npm uninstall bumpster
    ```
 
 2. **移除全局链接**
 
    ```bash
    # 方法1：在任何目录运行
-   npm uninstall -g @ai-app-base/bump-version-js
+   npm uninstall -g bumpster
 
    # 方法2：在包目录运行
-   cd /path/to/bump-version-js
-   npm unlink @ai-app-base/bump-version-js
+   cd /path/to/bumpster
+   npm unlink bumpster
    ```
 
 #### 查看全局链接的包
@@ -232,7 +232,7 @@ npm run build
 npm list -g --depth=0
 
 # 查看具体包的链接位置
-npm list -g @ai-app-base/bump-version-js
+npm list -g bumpster
 ```
 
 #### 注意事项
@@ -255,7 +255,7 @@ npm list -g @ai-app-base/bump-version-js
 
    ```bash
    npm run build
-   bump-version-js  # 使用工具自身更新版本
+   bump  # 使用工具自身更新版本
    ```
 
 3. **发布到 npm**
