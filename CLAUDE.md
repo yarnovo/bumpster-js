@@ -33,6 +33,8 @@
 - Vitest - 测试框架
 - ESLint - 代码规范检查
 - Prettier - 代码格式化
+- eslint-config-prettier - 禁用与 Prettier 冲突的 ESLint 规则
+- eslint-plugin-prettier - 将 Prettier 作为 ESLint 规则运行
 - Husky - Git hooks
 - lint-staged - 暂存文件检查
 
@@ -91,5 +93,28 @@ bumpster/
 
 如果遇到 comma-dangle 错误，运行 `npm run lint:fix` 自动修复。
 
-<!-- 最后更新时间: 2025-01-08T13:55:27+08:00 -->
-<!-- 最后检查时间: 2025-01-08T13:55:27+08:00 -->
+### TypeScript 编译器损坏问题
+
+如果遇到 TypeScript 编译器错误（如 `Invalid or unexpected token`），说明 node_modules 中的 TypeScript 文件可能已损坏。解决方法：
+
+1. 删除 node_modules 和 package-lock.json：`rm -rf node_modules package-lock.json`
+2. 重新安装依赖：`npm install`
+3. 验证修复：`npm run build`
+
+### ESLint 和 Prettier 兼容性配置
+
+项目使用 ESLint 进行代码质量检查，Prettier 进行代码格式化。为避免规则冲突：
+
+1. 已安装 `eslint-config-prettier` 和 `eslint-plugin-prettier`
+2. ESLint 配置中集成了 Prettier 插件
+3. 格式化规则（如 `semi`、`quotes`、`comma-dangle`）由 Prettier 统一处理
+4. 运行 `npm run format` 格式化代码，`npm run lint` 检查代码质量
+
+配置要点：
+
+- `.prettierrc.json` 定义格式化规则
+- `eslint.config.js` 中使用 `prettier/prettier` 规则
+- 通过 `prettierConfig.rules` 禁用冲突的 ESLint 规则
+
+<!-- 最后更新时间: 2025-01-08T14:05:49+08:00 -->
+<!-- 最后检查时间: 2025-01-08T14:05:49+08:00 -->

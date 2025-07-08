@@ -1,5 +1,7 @@
 import js from '@eslint/js';
 import tseslint from 'typescript-eslint';
+import prettierPlugin from 'eslint-plugin-prettier';
+import prettierConfig from 'eslint-config-prettier';
 
 export default tseslint.config(
   js.configs.recommended,
@@ -15,6 +17,9 @@ export default tseslint.config(
         ecmaVersion: 'latest',
         sourceType: 'module',
       },
+    },
+    plugins: {
+      prettier: prettierPlugin,
     },
     rules: {
       '@typescript-eslint/no-unused-vars': [
@@ -33,9 +38,10 @@ export default tseslint.config(
         },
       ],
       'no-console': 'off',
-      semi: ['error', 'always'],
-      quotes: ['error', 'single', { avoidEscape: true }],
-      'comma-dangle': ['error', 'never'],
+      // Prettier 将处理这些格式规则
+      'prettier/prettier': 'error',
+      // 禁用与 Prettier 冲突的规则
+      ...prettierConfig.rules,
     },
   },
   {
@@ -53,8 +59,13 @@ export default tseslint.config(
         global: 'readonly',
       },
     },
+    plugins: {
+      prettier: prettierPlugin,
+    },
     rules: {
       '@typescript-eslint/no-require-imports': 'off',
+      'prettier/prettier': 'error',
+      ...prettierConfig.rules,
     },
   }
 );
