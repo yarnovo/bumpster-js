@@ -59,13 +59,13 @@
 ### 全局安装
 
 ```bash
-npm install -g @ai-app-base/bump-version-js
+npm install -g bumpster
 ```
 
 ### 项目内安装
 
 ```bash
-npm install --save-dev @ai-app-base/bump-version-js
+npm install --save-dev bumpster
 ```
 
 ## 使用方法
