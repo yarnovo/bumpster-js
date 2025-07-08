@@ -13,8 +13,8 @@
 ### 克隆项目
 
 ```bash
-git clone https://github.com/ai-app-base/bump-version-js.git
-cd bump-version-js
+git clone https://github.com/yarnovo/bumpster-js.git
+cd bumpster-js
 ```
 
 ### 安装依赖

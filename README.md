@@ -217,5 +217,5 @@ bump-js validate <version>
 
 - [语义化版本规范](https://semver.org/)
 - [npm 包主页](https://www.npmjs.com/package/bumpster)
-- [GitHub 仓库](https://github.com/ai-app-base/bump-version-js)
-- [问题反馈](https://github.com/ai-app-base/bump-version-js/issues)
+- [GitHub 仓库](https://github.com/yarnovo/bumpster-js)
+- [问题反馈](https://github.com/yarnovo/bumpster-js/issues)

@@ -28,14 +28,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ai-app-base/bump-version-js.git"
+    "url": "git+https://github.com/yarnovo/bumpster-js.git"
   },
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/ai-app-base/bump-version-js/issues"
+    "url": "https://github.com/yarnovo/bumpster-js/issues"
   },
-  "homepage": "https://github.com/ai-app-base/bump-version-js#readme",
+  "homepage": "https://github.com/yarnovo/bumpster-js#readme",
   "files": [
     "dist/"
   ],
