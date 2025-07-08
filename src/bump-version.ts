@@ -563,21 +563,6 @@ async function main(): Promise<void> {
 
     console.log(chalk.green.bold('\n✅ 版本更新成功！\n'));
     console.log(chalk.white(`版本 ${newVersion} 已创建并推送到远程仓库`));
-    console.log(chalk.white('如果配置了 CI/CD，将自动执行后续流程...'));
-
-    // 显示部署后的访问地址
-    const workerName = newVersion.replace(/\./g, '-').replace(/-(dev|alpha|beta|rc)-/, '-$1');
-    console.log(chalk.blue.bold('\n🌐 部署后访问地址:'));
-    console.log(chalk.white(`  https://website-${workerName}.<your-subdomain>.workers.dev`));
-
-    console.log(chalk.blue.bold('\n🔗 相关链接:'));
-    console.log(chalk.white('  GitHub Actions: 查看部署进度'));
-    console.log(chalk.white('  Cloudflare Dashboard: 管理 Workers'));
-
-    console.log(chalk.yellow.bold('\n📌 下一步:'));
-    console.log(chalk.white('  1. 等待 GitHub Actions 部署完成'));
-    console.log(chalk.white('  2. 访问部署的 Worker URL 进行验证'));
-    console.log(chalk.white('  3. 更新域名指向新版本 Worker'));
   } catch (error) {
     console.error(chalk.red('\n❌ 版本更新过程中出现错误'));
     console.error(error);
