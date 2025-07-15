@@ -48,6 +48,36 @@ function getCurrentVersion(): string {
   return packageJson.version;
 }
 
+// 检查并执行 npm 生命周期钩子
+function executeNpmScript(scriptName: string, description: string): boolean {
+  try {
+    const packageJson = JSON.parse(readFileSync('./package.json', 'utf8'));
+    const scripts = packageJson.scripts || {};
+
+    if (scripts[scriptName]) {
+      console.log(chalk.cyan(`\n🔄 执行 ${description} 脚本: ${scriptName}...`));
+
+      if (isDryRun) {
+        console.log(chalk.gray(`[DRY-RUN] 将执行: npm run ${scriptName}`));
+        return true;
+      }
+
+      exec(`npm run ${scriptName}`);
+      console.log(chalk.green(`✅ ${description} 脚本执行成功`));
+      return true;
+    } else {
+      console.log(chalk.gray(`ℹ️  未找到 ${scriptName} 脚本，跳过`));
+      return true;
+    }
+  } catch (error) {
+    console.error(chalk.red(`❌ ${description} 脚本执行失败`));
+    if (error instanceof Error) {
+      console.error(error.message);
+    }
+    return false;
+  }
+}
+
 // 获取当前分支
 function getCurrentBranch(): string {
   return exec('git branch --show-current', true);
@@ -510,13 +540,33 @@ async function main(): Promise<void> {
   console.log(chalk.white(`  发布类型: ${releaseTypeName}`));
 
   console.log(chalk.blue.bold('\n📝 执行步骤:\n'));
-  const steps = [
-    `更新版本号到 ${newVersion}`,
-    `提交版本更新 (commit message: "chore: release ${newVersion}")`,
-    `创建 Git 标签 ${tagName}`,
-    '推送提交和标签到远程仓库 (git push --follow-tags)',
-    '如果配置了 CI/CD，将自动执行后续流程',
-  ];
+
+  // 检查目标项目的 npm scripts
+  const packageJson = JSON.parse(readFileSync('./package.json', 'utf8'));
+  const scripts = packageJson.scripts || {};
+
+  const steps = [];
+
+  // 根据项目配置动态生成步骤
+  if (scripts.preversion) {
+    steps.push('执行 preversion 脚本 (版本更新前检查)');
+  }
+
+  steps.push(`更新版本号到 ${newVersion}`);
+
+  if (scripts.version) {
+    steps.push('执行 version 脚本 (版本更新后处理)');
+  }
+
+  steps.push(`提交版本更新 (commit message: "chore: release ${newVersion}")`);
+  steps.push(`创建 Git 标签 ${tagName}`);
+
+  if (scripts.postversion) {
+    steps.push('执行 postversion 脚本 (版本更新完成后)');
+  }
+
+  steps.push('推送提交和标签到远程仓库 (git push --follow-tags)');
+  steps.push('如果配置了 CI/CD，将自动执行后续流程');
 
   steps.forEach((step, index) => {
     console.log(`  ${index + 1}. ${step}`);
@@ -541,7 +591,14 @@ async function main(): Promise<void> {
   console.log(chalk.green.bold('\n🏃 开始执行版本更新...\n'));
 
   try {
-    // 1. 更新版本号
+    // 1. 执行 preversion 钩子
+    const preversionSuccess = executeNpmScript('preversion', 'preversion (版本更新前)');
+    if (!preversionSuccess) {
+      console.log(chalk.red('✖ preversion 脚本执行失败，版本更新已取消'));
+      process.exit(1);
+    }
+
+    // 2. 更新版本号
     console.log(chalk.cyan(`📦 更新版本号到 ${newVersion}...`));
 
     // 手动更新 package.json 以保留构建元数据
@@ -575,7 +632,14 @@ async function main(): Promise<void> {
       // package-lock.json 可能不存在，忽略错误
     }
 
-    // 2. 提交更改
+    // 3. 执行 version 钩子
+    const versionSuccess = executeNpmScript('version', 'version (版本更新后)');
+    if (!versionSuccess) {
+      console.log(chalk.red('✖ version 脚本执行失败，版本更新已取消'));
+      process.exit(1);
+    }
+
+    // 4. 提交更改
     console.log(chalk.cyan('\n💾 提交版本更新...'));
     exec('git add package.json');
     // 如果存在 package-lock.json，也添加它
@@ -586,11 +650,17 @@ async function main(): Promise<void> {
     }
     exec(`git commit -m "chore: release ${newVersion}"`);
 
-    // 3. 创建标签
+    // 5. 创建标签
     console.log(chalk.cyan(`\n🏷️  创建标签 ${tagName}...`));
     exec(`git tag -a ${tagName} -m "Release ${newVersion}"`);
 
-    // 4. 推送提交和标签 (除非在测试环境中)
+    // 6. 执行 postversion 钩子
+    const postversionSuccess = executeNpmScript('postversion', 'postversion (版本更新完成后)');
+    if (!postversionSuccess) {
+      console.log(chalk.yellow('⚠️  postversion 脚本执行失败，但版本更新已完成'));
+    }
+
+    // 7. 推送提交和标签 (除非在测试环境中)
     if (!process.env.BUMP_VERSION_SKIP_PUSH) {
       console.log(chalk.cyan('\n📤 推送提交和标签到远程仓库...'));
       exec('git push --follow-tags');
@@ -628,6 +698,7 @@ export {
   checkGitStatus,
   getNextVersion,
   validateVersion,
+  executeNpmScript,
 };
 
 // 仅在直接运行时执行 main 函数
