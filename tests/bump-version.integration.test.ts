@@ -23,7 +23,10 @@ function createTestEnv(defaults: Record<string, unknown> = {}): NodeJS.ProcessEn
   };
 }
 
-async function createTestRepo(initialVersion: string = '1.0.0'): Promise<TestRepo> {
+async function createTestRepo(
+  initialVersion: string = '1.0.0',
+  scripts?: Record<string, string>
+): Promise<TestRepo> {
   // 在项目根目录下创建临时测试目录
   const testTempDir = join(__dirname, '..', '.test-repos');
   // 确保测试目录存在
@@ -42,6 +45,7 @@ async function createTestRepo(initialVersion: string = '1.0.0'): Promise<TestRep
     name: 'test-package',
     version: initialVersion,
     description: 'Test package for bump-version',
+    ...(scripts && { scripts }),
   };
 
   await writeFile(join(tempDir, 'package.json'), JSON.stringify(packageJson, null, 2));
@@ -674,6 +678,290 @@ describe('bump-version integration tests', () => {
       expect(exitCode).toBe(1);
       expect(stderr).toContain('❌ 请提供要验证的版本号');
       expect(stderr).toContain('用法: bump-version-js validate <version>');
+    });
+  });
+
+  describe('npm lifecycle hooks', () => {
+    it('should execute preversion hook successfully', async () => {
+      testRepo = await createTestRepo('1.0.0', {
+        preversion: 'echo "Running preversion hook"',
+      });
+
+      const { stdout } = await execa('node', [bumpVersionPath], {
+        cwd: testRepo.path,
+        env: createTestEnv({
+          releaseTypeChoice: 'production',
+          selectedVersionBump: 'patch',
+          confirm: true,
+        }),
+      });
+
+      expect(stdout).toContain('执行 preversion (版本更新前) 脚本');
+      expect(stdout).toContain('Running preversion hook');
+      expect(stdout).toContain('✅ preversion (版本更新前) 脚本执行成功');
+
+      const newVersion = await getVersion(testRepo.path);
+      expect(newVersion).toBe('1.0.1');
+    });
+
+    it('should execute version hook successfully', async () => {
+      testRepo = await createTestRepo('1.0.0', {
+        version: 'echo "Running version hook for $npm_package_version"',
+      });
+
+      const { stdout } = await execa('node', [bumpVersionPath], {
+        cwd: testRepo.path,
+        env: createTestEnv({
+          releaseTypeChoice: 'production',
+          selectedVersionBump: 'patch',
+          confirm: true,
+        }),
+      });
+
+      expect(stdout).toContain('执行 version (版本更新后) 脚本');
+      expect(stdout).toContain('Running version hook');
+      expect(stdout).toContain('✅ version (版本更新后) 脚本执行成功');
+    });
+
+    it('should execute postversion hook successfully', async () => {
+      testRepo = await createTestRepo('1.0.0', {
+        postversion: 'echo "Running postversion hook"',
+      });
+
+      const { stdout } = await execa('node', [bumpVersionPath], {
+        cwd: testRepo.path,
+        env: createTestEnv({
+          releaseTypeChoice: 'production',
+          selectedVersionBump: 'patch',
+          confirm: true,
+        }),
+      });
+
+      expect(stdout).toContain('执行 postversion (版本更新完成后) 脚本');
+      expect(stdout).toContain('Running postversion hook');
+      expect(stdout).toContain('✅ postversion (版本更新完成后) 脚本执行成功');
+    });
+
+    it('should execute all hooks in correct order', async () => {
+      testRepo = await createTestRepo('1.0.0', {
+        preversion: 'echo "1. preversion hook"',
+        version: 'echo "2. version hook"',
+        postversion: 'echo "3. postversion hook"',
+      });
+
+      const { stdout } = await execa('node', [bumpVersionPath], {
+        cwd: testRepo.path,
+        env: createTestEnv({
+          releaseTypeChoice: 'production',
+          selectedVersionBump: 'patch',
+          confirm: true,
+        }),
+      });
+
+      // 验证执行顺序
+      const lines = stdout.split('\n');
+      const preversionIndex = lines.findIndex(line => line.includes('1. preversion hook'));
+      const versionIndex = lines.findIndex(line => line.includes('2. version hook'));
+      const postversionIndex = lines.findIndex(line => line.includes('3. postversion hook'));
+
+      expect(preversionIndex).toBeLessThan(versionIndex);
+      expect(versionIndex).toBeLessThan(postversionIndex);
+
+      // 验证所有钩子都成功执行
+      expect(stdout).toContain('✅ preversion (版本更新前) 脚本执行成功');
+      expect(stdout).toContain('✅ version (版本更新后) 脚本执行成功');
+      expect(stdout).toContain('✅ postversion (版本更新完成后) 脚本执行成功');
+    });
+
+    it('should skip hooks when not present', async () => {
+      testRepo = await createTestRepo('1.0.0'); // 没有 scripts
+
+      const { stdout } = await execa('node', [bumpVersionPath], {
+        cwd: testRepo.path,
+        env: createTestEnv({
+          releaseTypeChoice: 'production',
+          selectedVersionBump: 'patch',
+          confirm: true,
+        }),
+      });
+
+      expect(stdout).toContain('ℹ️  未找到 preversion 脚本，跳过');
+      expect(stdout).toContain('ℹ️  未找到 version 脚本，跳过');
+      expect(stdout).toContain('ℹ️  未找到 postversion 脚本，跳过');
+
+      const newVersion = await getVersion(testRepo.path);
+      expect(newVersion).toBe('1.0.1');
+    });
+
+    it('should show hooks in execution plan', async () => {
+      testRepo = await createTestRepo('1.0.0', {
+        preversion: 'echo "preversion"',
+        version: 'echo "version"',
+        postversion: 'echo "postversion"',
+      });
+
+      const { stdout } = await execa('node', [bumpVersionPath], {
+        cwd: testRepo.path,
+        env: createTestEnv({
+          releaseTypeChoice: 'production',
+          selectedVersionBump: 'patch',
+          confirm: true,
+        }),
+      });
+
+      // 验证执行计划中包含钩子
+      expect(stdout).toContain('执行 preversion 脚本 (版本更新前检查)');
+      expect(stdout).toContain('执行 version 脚本 (版本更新后处理)');
+      expect(stdout).toContain('执行 postversion 脚本 (版本更新完成后)');
+    });
+
+    it('should cancel update when preversion hook fails', async () => {
+      testRepo = await createTestRepo('1.0.0', {
+        preversion: 'exit 1', // 故意失败
+      });
+
+      const result = await execa('node', [bumpVersionPath], {
+        cwd: testRepo.path,
+        env: createTestEnv({
+          releaseTypeChoice: 'production',
+          selectedVersionBump: 'patch',
+          confirm: true,
+        }),
+        reject: false,
+      });
+
+      // 检查stderr或stdout中的错误信息
+      const output = result.stdout + result.stderr;
+      expect(output).toContain('✖ preversion 脚本执行失败，版本更新已取消');
+      expect(result.exitCode).toBe(1);
+
+      // 验证版本号未更改
+      const version = await getVersion(testRepo.path);
+      expect(version).toBe('1.0.0');
+    });
+
+    it('should cancel update when version hook fails', async () => {
+      testRepo = await createTestRepo('1.0.0', {
+        version: 'exit 1', // 故意失败
+      });
+
+      const result = await execa('node', [bumpVersionPath], {
+        cwd: testRepo.path,
+        env: createTestEnv({
+          releaseTypeChoice: 'production',
+          selectedVersionBump: 'patch',
+          confirm: true,
+        }),
+        reject: false,
+      });
+
+      // 检查stderr或stdout中的错误信息
+      const output = result.stdout + result.stderr;
+      expect(output).toContain('✖ version 脚本执行失败，版本更新已取消');
+      expect(result.exitCode).toBe(1);
+
+      // 验证版本号未更改
+      const version = await getVersion(testRepo.path);
+      expect(version).toBe('1.0.0');
+    });
+
+    it('should warn but continue when postversion hook fails', async () => {
+      testRepo = await createTestRepo('1.0.0', {
+        postversion: 'exit 1', // 故意失败
+      });
+
+      const result = await execa('node', [bumpVersionPath], {
+        cwd: testRepo.path,
+        env: createTestEnv({
+          releaseTypeChoice: 'production',
+          selectedVersionBump: 'patch',
+          confirm: true,
+        }),
+        reject: false,
+      });
+
+      // 检查stderr或stdout中的错误信息
+      const output = result.stdout + result.stderr;
+      expect(output).toContain('⚠️  postversion 脚本执行失败，但版本更新已完成');
+      expect(result.stdout).toContain('✅ 版本更新成功');
+
+      // 验证版本号已更新
+      const version = await getVersion(testRepo.path);
+      expect(version).toBe('1.0.1');
+    });
+
+    it('should preview hooks execution in dry-run mode', async () => {
+      testRepo = await createTestRepo('1.0.0', {
+        preversion: 'echo "preversion"',
+        version: 'echo "version"',
+        postversion: 'echo "postversion"',
+      });
+
+      const { stdout } = await execa('node', [bumpVersionPath, '--dry-run'], {
+        cwd: testRepo.path,
+        env: createTestEnv({
+          releaseTypeChoice: 'production',
+          selectedVersionBump: 'patch',
+          confirm: true,
+        }),
+      });
+
+      expect(stdout).toContain('🧪 DRY-RUN 模式');
+      expect(stdout).toContain('[DRY-RUN] 将执行: npm run preversion');
+      expect(stdout).toContain('[DRY-RUN] 将执行: npm run version');
+      expect(stdout).toContain('[DRY-RUN] 将执行: npm run postversion');
+
+      // 验证版本号未更改
+      const version = await getVersion(testRepo.path);
+      expect(version).toBe('1.0.0');
+    });
+
+    it('should work with prerelease versions and hooks', async () => {
+      testRepo = await createTestRepo('1.0.0', {
+        preversion: 'echo "Preparing prerelease"',
+        version: 'echo "Version updated to $npm_package_version"',
+        postversion: 'echo "Prerelease published"',
+      });
+
+      const { stdout } = await execa('node', [bumpVersionPath], {
+        cwd: testRepo.path,
+        env: createTestEnv({
+          releaseTypeChoice: 'dev',
+          selectedVersionBump: 'patch',
+          confirm: true,
+        }),
+      });
+
+      expect(stdout).toContain('Preparing prerelease');
+      expect(stdout).toContain('Version updated to');
+      expect(stdout).toContain('Prerelease published');
+
+      const newVersion = await getVersion(testRepo.path);
+      expect(newVersion).toBe('1.0.1-dev.0');
+    });
+
+    it('should work with custom version and hooks', async () => {
+      testRepo = await createTestRepo('1.0.0', {
+        preversion: 'echo "Custom version check"',
+        version: 'echo "Custom version set"',
+        postversion: 'echo "Custom version published"',
+      });
+
+      const { stdout } = await execa('node', [bumpVersionPath], {
+        cwd: testRepo.path,
+        env: createTestEnv({
+          releaseTypeChoice: 'custom',
+          customVersion: '2.5.0',
+          confirm: true,
+        }),
+      });
+
+      expect(stdout).toContain('Custom version check');
+      expect(stdout).toContain('Custom version set');
+      expect(stdout).toContain('Custom version published');
+
+      const newVersion = await getVersion(testRepo.path);
+      expect(newVersion).toBe('2.5.0');
     });
   });
 });

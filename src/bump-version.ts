@@ -62,9 +62,18 @@ function executeNpmScript(scriptName: string, description: string): boolean {
         return true;
       }
 
-      exec(`npm run ${scriptName}`);
-      console.log(chalk.green(`✅ ${description} 脚本执行成功`));
-      return true;
+      try {
+        const result = execSync(`npm run ${scriptName}`, { encoding: 'utf8' });
+        console.log(result.trim());
+        console.log(chalk.green(`✅ ${description} 脚本执行成功`));
+        return true;
+      } catch (error) {
+        console.error(chalk.red(`❌ ${description} 脚本执行失败`));
+        if (error instanceof Error) {
+          console.error(error.message);
+        }
+        return false;
+      }
     } else {
       console.log(chalk.gray(`ℹ️  未找到 ${scriptName} 脚本，跳过`));
       return true;
@@ -601,9 +610,17 @@ async function main(): Promise<void> {
     // 2. 更新版本号
     console.log(chalk.cyan(`📦 更新版本号到 ${newVersion}...`));
 
+    // 备份当前版本号以便回滚
+    const originalPackageJsonContent = readFileSync('./package.json', 'utf8');
+    let originalPackageLockContent: string | null = null;
+    try {
+      originalPackageLockContent = readFileSync('./package-lock.json', 'utf8');
+    } catch {
+      // package-lock.json 可能不存在
+    }
+
     // 手动更新 package.json 以保留构建元数据
-    const packageJsonContent = readFileSync('./package.json', 'utf8');
-    const packageJson = JSON.parse(packageJsonContent);
+    const packageJson = JSON.parse(originalPackageJsonContent);
     packageJson.version = newVersion;
 
     if (isDryRun) {
@@ -615,26 +632,35 @@ async function main(): Promise<void> {
     }
 
     // 如果存在 package-lock.json，也更新它
-    try {
-      const packageLockContent = readFileSync('./package-lock.json', 'utf8');
-      const packageLock = JSON.parse(packageLockContent);
-      packageLock.version = newVersion;
-      if (packageLock.packages && packageLock.packages['']) {
-        packageLock.packages[''].version = newVersion;
+    if (originalPackageLockContent) {
+      try {
+        const packageLock = JSON.parse(originalPackageLockContent);
+        packageLock.version = newVersion;
+        if (packageLock.packages && packageLock.packages['']) {
+          packageLock.packages[''].version = newVersion;
+        }
+        if (isDryRun) {
+          console.log(chalk.gray('[DRY-RUN] 将更新 package-lock.json 中的版本号'));
+        } else {
+          const fs = await import('fs/promises');
+          await fs.writeFile('./package-lock.json', JSON.stringify(packageLock, null, 2) + '\n');
+        }
+      } catch {
+        // 解析失败，忽略
       }
-      if (isDryRun) {
-        console.log(chalk.gray('[DRY-RUN] 将更新 package-lock.json 中的版本号'));
-      } else {
-        const fs = await import('fs/promises');
-        await fs.writeFile('./package-lock.json', JSON.stringify(packageLock, null, 2) + '\n');
-      }
-    } catch {
-      // package-lock.json 可能不存在，忽略错误
     }
 
     // 3. 执行 version 钩子
     const versionSuccess = executeNpmScript('version', 'version (版本更新后)');
     if (!versionSuccess) {
+      // 回滚版本号更改
+      if (!isDryRun) {
+        const fs = await import('fs/promises');
+        await fs.writeFile('./package.json', originalPackageJsonContent);
+        if (originalPackageLockContent) {
+          await fs.writeFile('./package-lock.json', originalPackageLockContent);
+        }
+      }
       console.log(chalk.red('✖ version 脚本执行失败，版本更新已取消'));
       process.exit(1);
     }

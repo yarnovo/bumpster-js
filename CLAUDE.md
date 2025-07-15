@@ -80,13 +80,14 @@ bumpster/
 每次更新代码或文件后，必须检查并更新相关文档：
 
 - **README.md** - 用户文档，包含使用说明、API 参考等
+- **CHANGELOG.md** - 更新日志，记录版本变更历史（遵循 Keep a Changelog 规范）
 - **DEVELOPMENT.md** - 开发文档，包含开发环境设置、项目结构等
 - **DEPLOYMENT.md** - 部署文档，包含 GitHub Actions 配置和部署流程
 - **TESTING.md** - 测试文档，包含本地测试、npm link 和全局安装流程
 
 ### 项目文档结构
 
-- **用户向文档**：README.md（使用说明）
+- **用户向文档**：README.md（使用说明）、CHANGELOG.md（更新日志）
 - **开发者文档**：DEVELOPMENT.md（开发指南）、TESTING.md（测试指南）
 - **运维文档**：DEPLOYMENT.md（部署配置）
 
@@ -102,6 +103,13 @@ bumpster/
 ### ESLint comma-dangle 错误
 
 如果遇到 comma-dangle 错误，运行 `npm run lint:fix` 自动修复。
+
+### 代码格式化问题
+
+如果遇到 ESLint 格式化错误，可以使用以下命令：
+
+- `npm run lint:fix` - 自动修复 ESLint 错误
+- `npm run format` - 使用 Prettier 格式化代码
 
 ### TypeScript 编译器损坏问题
 
@@ -138,6 +146,21 @@ bumpster/
 
 这样可以提高 Git 提交效率，避免重复格式化操作。
 
+### npm 生命周期钩子问题排查
+
+如果在使用 bumpster 时发现目标项目的 npm 脚本没有被执行，请检查：
+
+1. **确认脚本存在**：检查目标项目的 `package.json` 中是否定义了相应的脚本
+2. **检查脚本名称**：确保脚本名称为 `preversion`、`version` 或 `postversion`
+3. **查看执行日志**：bumpster 会显示是否找到并执行了相应的脚本
+4. **验证脚本权限**：确保脚本有执行权限
+
+**常见问题**：
+
+- 问题：为什么 `version` 脚本没有被调用？
+- 原因：bumpster 直接修改 `package.json` 文件，而不是使用 `npm version` 命令
+- 解决：bumpster 现在会手动检测并执行这些钩子，保持与 npm 标准一致
+
 ## CI/CD 配置
 
 ### GitHub Actions 权限配置
@@ -171,11 +194,40 @@ bumpster/
   - 显示 "🧪 DRY-RUN 模式" 提示
   - 预览所有 Git 操作（commit、tag、push）但不执行
   - 预览文件更新（package.json、package-lock.json）但不写入
+  - 预览 npm 生命周期钩子的执行
   - 每个操作都会显示 "[DRY-RUN] 将执行: xxx"
 - **实现方式**：
   - 全局变量 `isDryRun` 控制模式
   - 在 `exec` 函数中拦截 Git 命令
   - 在文件写入前进行判断
+  - 在 `executeNpmScript` 函数中支持预览钩子执行
 
-<!-- 最后更新时间: 2025-01-08T15:40:00+08:00 -->
-<!-- 最后检查时间: 2025-01-08T15:40:00+08:00 -->
+### npm 生命周期钩子支持
+
+工具会自动检测并执行目标项目的 npm 生命周期钩子，完全符合 npm 标准：
+
+- **支持的钩子**：
+  - `preversion` - 版本更新前执行（用于测试、代码检查等）
+  - `version` - 版本更新后执行（用于更新文档、构建等）
+  - `postversion` - 版本更新完成后执行（用于发布、通知等）
+
+- **执行顺序**：
+
+  ```
+  preversion → 更新版本号 → version → git commit → git tag → postversion → git push
+  ```
+
+- **错误处理**：
+  - `preversion` 和 `version` 脚本失败时会取消版本更新
+  - `postversion` 脚本失败时仅显示警告，不会回滚已完成的更新
+
+- **用户体验**：
+  - 智能检测项目中的 npm scripts
+  - 执行计划会动态显示将要执行的钩子
+  - 详细的执行状态反馈
+  - 支持 dry-run 模式预览钩子执行
+
+- **实现函数**：
+  - `executeNpmScript(scriptName, description)` - 核心钩子执行函数
+  - 自动检测项目 package.json 中的 scripts 配置
+  - 与现有的 dry-run 模式完全兼容
