@@ -214,7 +214,7 @@ bumpster/
 - **执行顺序**：
 
   ```
-  preversion → 更新版本号 → version → git commit → git tag → postversion → git push
+  preversion → 更新版本号 → 更新 CHANGELOG.md → version → git commit → git tag → postversion → git push
   ```
 
 - **错误处理**：
@@ -231,3 +231,30 @@ bumpster/
   - `executeNpmScript(scriptName, description)` - 核心钩子执行函数
   - 自动检测项目 package.json 中的 scripts 配置
   - 与现有的 dry-run 模式完全兼容
+
+### CHANGELOG.md 自动更新
+
+工具会在版本更新过程中自动更新项目的 CHANGELOG.md 文件：
+
+- **触发条件**：
+  - 项目根目录存在 CHANGELOG.md 文件
+  - CHANGELOG.md 中包含 `## [Unreleased]` 部分
+  - 在 version 钩子执行前自动触发
+
+- **更新逻辑**：
+  - 保留原有的 `[Unreleased]` 标题用于后续开发
+  - 在 `[Unreleased]` 下方插入新版本记录
+  - 格式：`## [版本号] - YYYY-MM-DD`
+  - 保留所有原有内容，仅添加版本标记
+
+- **集成特性**：
+  - 支持 dry-run 模式预览更新
+  - 自动将 CHANGELOG.md 添加到 Git 提交中
+  - 在执行计划中显示更新步骤
+  - 静默处理不存在或无需更新的情况
+
+- **实现模块**：
+  - `changelog-updater.ts` - 独立的更新模块
+  - `updateChangelog()` - 核心更新函数
+  - `checkChangelogExists()` - 检查文件存在性
+  - `hasUnreleasedSection()` - 检查是否有待发布内容

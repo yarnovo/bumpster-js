@@ -7,6 +7,11 @@ import { dirname, join } from 'path';
 import prompts from 'prompts';
 import chalk from 'chalk';
 import * as semver from 'semver';
+import {
+  updateChangelog,
+  checkChangelogExists,
+  hasUnreleasedSection,
+} from './changelog-updater.js';
 
 type ReleaseType = 'major' | 'minor' | 'patch';
 type PrereleaseType = 'dev' | 'alpha' | 'beta' | 'rc';
@@ -563,6 +568,12 @@ async function main(): Promise<void> {
 
   steps.push(`更新版本号到 ${newVersion}`);
 
+  // 检查是否需要更新 CHANGELOG.md
+  const hasChangelog = await checkChangelogExists(process.cwd());
+  if (hasChangelog && (await hasUnreleasedSection(process.cwd()))) {
+    steps.push('更新 CHANGELOG.md (将 [Unreleased] 替换为新版本号和日期)');
+  }
+
   if (scripts.version) {
     steps.push('执行 version 脚本 (版本更新后处理)');
   }
@@ -650,7 +661,14 @@ async function main(): Promise<void> {
       }
     }
 
-    // 3. 执行 version 钩子
+    // 3. 更新 CHANGELOG.md（如果存在）
+    const hasChangelog = await checkChangelogExists(process.cwd());
+    if (hasChangelog && (await hasUnreleasedSection(process.cwd()))) {
+      console.log(chalk.cyan('\n📝 更新 CHANGELOG.md...'));
+      await updateChangelog(process.cwd(), newVersion, isDryRun);
+    }
+
+    // 4. 执行 version 钩子
     const versionSuccess = executeNpmScript('version', 'version (版本更新后)');
     if (!versionSuccess) {
       // 回滚版本号更改
@@ -665,7 +683,7 @@ async function main(): Promise<void> {
       process.exit(1);
     }
 
-    // 4. 提交更改
+    // 5. 提交更改
     console.log(chalk.cyan('\n💾 提交版本更新...'));
     exec('git add package.json');
     // 如果存在 package-lock.json，也添加它
@@ -674,19 +692,27 @@ async function main(): Promise<void> {
     } catch {
       // package-lock.json 可能不存在，忽略错误
     }
+    // 如果更新了 CHANGELOG.md，也添加它
+    if (hasChangelog && (await hasUnreleasedSection(process.cwd()))) {
+      try {
+        exec('git add CHANGELOG.md', true);
+      } catch {
+        // CHANGELOG.md 可能没有被更新，忽略错误
+      }
+    }
     exec(`git commit -m "chore: release ${newVersion}"`);
 
-    // 5. 创建标签
+    // 6. 创建标签
     console.log(chalk.cyan(`\n🏷️  创建标签 ${tagName}...`));
     exec(`git tag -a ${tagName} -m "Release ${newVersion}"`);
 
-    // 6. 执行 postversion 钩子
+    // 7. 执行 postversion 钩子
     const postversionSuccess = executeNpmScript('postversion', 'postversion (版本更新完成后)');
     if (!postversionSuccess) {
       console.log(chalk.yellow('⚠️  postversion 脚本执行失败，但版本更新已完成'));
     }
 
-    // 7. 推送提交和标签 (除非在测试环境中)
+    // 8. 推送提交和标签 (除非在测试环境中)
     if (!process.env.BUMP_VERSION_SKIP_PUSH) {
       console.log(chalk.cyan('\n📤 推送提交和标签到远程仓库...'));
       exec('git push --follow-tags');
