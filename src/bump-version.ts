@@ -674,7 +674,7 @@ async function main(): Promise<void> {
     } catch {
       // package-lock.json 可能不存在，忽略错误
     }
-    exec(`git commit -m "chore: release ${newVersion}"`);
+    exec(`git commit -m "chore: release ${newVersion} [skip ci]"`);
 
     // 5. 创建标签
     console.log(chalk.cyan(`\n🏷️  创建标签 ${tagName}...`));

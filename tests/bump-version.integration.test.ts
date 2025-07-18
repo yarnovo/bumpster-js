@@ -547,7 +547,7 @@ describe('bump-version integration tests', () => {
 
       // 获取最新提交信息
       const { stdout } = await execa('git', ['log', '-1', '--pretty=%B'], { cwd: testRepo.path });
-      expect(stdout.trim()).toBe('chore: release 1.0.1');
+      expect(stdout.trim()).toBe('chore: release 1.0.1 [skip ci]');
     });
 
     it('should create annotated tag with correct message', async () => {
