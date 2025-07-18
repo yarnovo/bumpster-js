@@ -574,8 +574,7 @@ async function main(): Promise<void> {
     steps.push('执行 postversion 脚本 (版本更新完成后)');
   }
 
-  steps.push('推送提交到远程仓库 (git push)');
-  steps.push('推送标签到远程仓库 (git push --tags)');
+  steps.push('推送提交和标签到远程仓库 (git push --follow-tags)');
   steps.push('如果配置了 CI/CD，将自动执行后续流程');
 
   steps.forEach((step, index) => {
@@ -675,7 +674,7 @@ async function main(): Promise<void> {
     } catch {
       // package-lock.json 可能不存在，忽略错误
     }
-    exec(`git commit -m "chore: release ${newVersion} [skip ci]"`);
+    exec(`git commit -m "chore: release ${newVersion}"`);
 
     // 5. 创建标签
     console.log(chalk.cyan(`\n🏷️  创建标签 ${tagName}...`));
@@ -689,11 +688,8 @@ async function main(): Promise<void> {
 
     // 7. 推送提交和标签 (除非在测试环境中)
     if (!process.env.BUMP_VERSION_SKIP_PUSH) {
-      console.log(chalk.cyan('\n📤 推送提交到远程仓库...'));
-      exec('git push');
-
-      console.log(chalk.cyan('\n🏷️  推送标签到远程仓库...'));
-      exec('git push --tags');
+      console.log(chalk.cyan('\n📤 推送提交和标签到远程仓库...'));
+      exec('git push --follow-tags');
     }
 
     console.log(chalk.green.bold('\n✅ 版本更新成功！\n'));
